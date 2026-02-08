@@ -2,6 +2,7 @@
 """TunBot - Discord bot for managing temporary Cloudflare tunnels."""
 
 import asyncio
+import aiohttp
 import logging
 import os
 import re
@@ -224,6 +225,22 @@ class TunnelManager:
                 logger.info(f"Tunnel cleaned up: {service} (PID: {tunnel.pid})")
             self._tunnels.clear()
 
+    async def _wait_for_ready(self, url: str, timeout: int = 20) -> bool:
+        """Poll tunnel URL until it returns < 500 status."""
+        start_time = time.time()
+        # Use short timeout for individual checks
+        check_timeout = aiohttp.ClientTimeout(total=3)
+        async with aiohttp.ClientSession() as session:
+            while time.time() - start_time < timeout:
+                try:
+                    async with session.get(url, timeout=check_timeout) as resp:
+                        if resp.status < 500:
+                            return True
+                except:
+                    pass
+                await asyncio.sleep(1)
+        return False
+
     async def _extract_url(
         self, process: asyncio.subprocess.Process, timeout: float = 30.0
     ) -> Optional[str]:
@@ -419,7 +436,9 @@ async def tunnel_start(ctx: commands.Context, service: str, duration: Optional[i
     )
     status_msg = await ctx.send(embed=embed)
 
+    start_time = time.time()
     success, result = await bot.tunnels.start(service, svc.port, duration, ctx.author.id)
+    elapsed = round(time.time() - start_time, 2)
 
     if success:
         dur_str = format_duration(duration)
@@ -428,14 +447,19 @@ async def tunnel_start(ctx: commands.Context, service: str, duration: Optional[i
         embed.add_field(name="Port", value=str(svc.port), inline=True)
         embed.add_field(name="Duration", value=dur_str, inline=True)
         embed.add_field(name="URL", value=result, inline=False)
+        embed.set_footer(text=f"Tunnel spun up in {elapsed}s")
         await status_msg.edit(embed=embed)
         logger.info(f"User {ctx.author} started tunnel: {service} for {dur_str}")
     else:
         embed = discord.Embed(
             title="Tunnel Failed",
-            description=result,
+            description=f"Error: {result}",
             color=Colors.ERROR,
         )
+        if elapsed > 15:
+            embed.set_footer(text=f"Unresponsive after {elapsed}s")
+        else:
+            embed.set_footer(text=f"Failed after {elapsed}s")
         await status_msg.edit(embed=embed)
         logger.error(f"User {ctx.author} failed to start tunnel {service}: {result}")
 
