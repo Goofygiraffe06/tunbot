@@ -73,14 +73,14 @@ def print_info(text: str):
 def prompt(text: str, default: str = "") -> str:
     if default:
         hint = f"{Colors.DIM}(default: {default}){Colors.RESET}"
-        result = input(f"  {Colors.CYAN}›{Colors.RESET} {text} {hint}: ").strip()
+        result = input(f"  {Colors.CYAN}>{Colors.RESET} {text} {hint}: ").strip()
         return result if result else default
-    return input(f"  {Colors.CYAN}›{Colors.RESET} {text}: ").strip()
+    return input(f"  {Colors.CYAN}>{Colors.RESET} {text}: ").strip()
 
 
 def prompt_yes_no(text: str, default: bool = True) -> bool:
     hint = f"{Colors.DIM}[Y/n]{Colors.RESET}" if default else f"{Colors.DIM}[y/N]{Colors.RESET}"
-    result = input(f"  {Colors.CYAN}›{Colors.RESET} {text} {hint}: ").strip().lower()
+    result = input(f"  {Colors.CYAN}>{Colors.RESET} {text} {hint}: ").strip().lower()
     if not result:
         return default
     return result in ("y", "yes")
