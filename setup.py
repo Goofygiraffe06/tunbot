@@ -316,6 +316,51 @@ def setup_env(token: str):
             print_ok("Created .env")
 
 
+def setup_systemd():
+    """Generate systemd service file for persistent operation."""
+    if not shutil.which("systemctl"):
+        return
+
+    print()
+    if not prompt_yes_no("Generate systemd service file for auto-start?", default=False):
+        return
+
+    bot_dir = Path.cwd().resolve()
+    venv_python = bot_dir / "venv" / "bin" / "python"
+    if not venv_python.exists():
+        venv_python = shutil.which("python3") or "python3"
+
+    service_content = f"""[Unit]
+Description=TunBot - Discord Cloudflare Tunnel Manager
+After=network.target
+
+[Service]
+Type=simple
+User={os.getenv('USER', 'root')}
+WorkingDirectory={bot_dir}
+ExecStart={venv_python} {bot_dir}/tunbot.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+    service_path = Path("tunbot.service")
+    service_path.write_text(service_content)
+    print_ok("Created tunbot.service")
+
+    print()
+    print_info("To install the service:")
+    print_info(f"  {Colors.BOLD}sudo cp tunbot.service /etc/systemd/system/{Colors.RESET}")
+    print_info(f"  {Colors.BOLD}sudo systemctl daemon-reload{Colors.RESET}")
+    print_info(f"  {Colors.BOLD}sudo systemctl enable --now tunbot{Colors.RESET}")
+    print()
+    print_info("To check status:")
+    print_info(f"  {Colors.BOLD}sudo systemctl status tunbot{Colors.RESET}")
+    print_info(f"  {Colors.BOLD}journalctl -u tunbot -f{Colors.RESET}")
+
+
 def main():
     print(BANNER)
 
@@ -373,6 +418,8 @@ def main():
         print_step(5, 5, "Writing Configuration")
         write_config(token, allowed_users, duration, max_concurrent, services)
         setup_env(token)
+
+    setup_systemd()
 
     print_header("Setup Complete")
 
