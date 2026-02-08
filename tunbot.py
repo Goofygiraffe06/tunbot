@@ -288,6 +288,7 @@ class TunBot(commands.Bot):
     def __init__(self, config: BotConfig):
         intents = discord.Intents.default()
         intents.message_content = True
+        intents.dm_messages = True
         super().__init__(command_prefix="!", intents=intents)
         self.config = config
         self.tunnels = TunnelManager()
@@ -524,18 +525,13 @@ def main():
     bot = TunBot(config)
     bot.add_command(tunnel)
 
-    def signal_handler(sig, frame):
-        logger.info("Received shutdown signal")
-        asyncio.create_task(bot.close())
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
     try:
         bot.run(config.token, log_handler=None)
     except discord.LoginFailure:
         logger.error("Invalid bot token. Check your configuration.")
         sys.exit(1)
+    except KeyboardInterrupt:
+        pass
     except Exception as e:
         logger.error(f"Failed to start bot: {e}")
         sys.exit(1)
