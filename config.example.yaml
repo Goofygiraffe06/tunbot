@@ -1,0 +1,39 @@
+# TunBot Configuration
+# Copy this file to config.yaml and customize
+
+# Discord bot token (environment variable DISCORD_BOT_TOKEN takes priority)
+bot_token: "your_bot_token_here"
+
+# List of Discord user IDs allowed to use the bot
+allowed_users:
+  - 123456789012345678
+  - 987654321098765432
+
+# Default settings
+defaults:
+  duration: 1h            # Default tunnel duration
+  max_concurrent: 3       # Maximum concurrent tunnels
+
+# Services whitelist
+# Each service defines a local port that can be tunneled
+# Duration format: 30s, 5m, 1h, 2h30m, etc.
+services:
+  minecraft:
+    port: 25565
+    description: "Minecraft server"
+    max_duration: 4h
+
+  webserver:
+    port: 8080
+    description: "Local web server"
+    max_duration: 2h
+
+  ssh:
+    port: 22
+    description: "SSH access"
+    max_duration: 30m
+
+  jupyter:
+    port: 8888
+    description: "Jupyter notebook"
+    max_duration: 3h
