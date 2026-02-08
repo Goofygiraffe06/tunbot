@@ -289,7 +289,12 @@ class TunBot(commands.Bot):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.dm_messages = True
-        super().__init__(command_prefix="!", intents=intents)
+        super().__init__(
+            command_prefix="!",
+            intents=intents,
+            activity=discord.Activity(type=discord.ActivityType.watching, name="!tunnel help"),
+            description="Cloudflare Tunnel Manager - Use !tunnel help to get started",
+        )
         self.config = config
         self.tunnels = TunnelManager()
 
