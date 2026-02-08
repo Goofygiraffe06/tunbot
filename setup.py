@@ -150,6 +150,7 @@ def check_dependencies():
             if not venv_python.exists():
                 venv_python = venv_path / "Scripts" / "python.exe"
             print_info("Restarting with venv...")
+            os.system("clear" if os.name != "nt" else "cls")
             os.execv(str(venv_python), [str(venv_python), __file__] + sys.argv[1:])
 
 
@@ -440,6 +441,8 @@ def main():
         print_info("Invite the bot to your server:")
         print(f"\n    {Colors.BOLD}{invite_url}{Colors.RESET}\n")
         print_info("After inviting, you can DM the bot directly.")
+
+    setup_systemd()
 
     print()
     if venv_exists and not in_venv:
