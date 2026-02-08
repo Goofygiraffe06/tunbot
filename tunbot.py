@@ -286,21 +286,19 @@ class Colors:
 
 class TunBot(commands.Bot):
     def __init__(self, config: BotConfig):
-        # Minimal intents - only what we need
-        intents = discord.Intents.none()
-        intents.guilds = True  # Required for bot to work
-        intents.message_content = True  # Required for commands
-        intents.dm_messages = True  # For DM commands
+        intents = discord.Intents.default()
+        intents.guilds = True
+        intents.message_content = True
+        intents.dm_messages = True 
 
         super().__init__(
             command_prefix="!",
             intents=intents,
             activity=discord.Activity(type=discord.ActivityType.watching, name="!tunnel help"),
             description="Cloudflare Tunnel Manager - Use !tunnel help to get started",
-            # Resource optimizations
             member_cache_flags=discord.MemberCacheFlags.none(),
             chunk_guilds_at_startup=False,
-            max_messages=None,  # Disable message cache
+            max_messages=None,
         )
         self.config = config
         self.tunnels = TunnelManager()
@@ -318,7 +316,7 @@ class TunBot(commands.Bot):
         await self.tunnels.cleanup_all()
         await super().close()
 
-    @tasks.loop(seconds=60)  # Check every 60s instead of 30s
+    @tasks.loop(seconds=60)
     async def cleanup_task(self):
         expired = await self.tunnels.cleanup_expired()
         for service in expired:
