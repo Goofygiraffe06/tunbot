@@ -286,14 +286,21 @@ class Colors:
 
 class TunBot(commands.Bot):
     def __init__(self, config: BotConfig):
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.dm_messages = True
+        # Minimal intents - only what we need
+        intents = discord.Intents.none()
+        intents.guilds = True  # Required for bot to work
+        intents.message_content = True  # Required for commands
+        intents.dm_messages = True  # For DM commands
+
         super().__init__(
             command_prefix="!",
             intents=intents,
             activity=discord.Activity(type=discord.ActivityType.watching, name="!tunnel help"),
             description="Cloudflare Tunnel Manager - Use !tunnel help to get started",
+            # Resource optimizations
+            member_cache_flags=discord.MemberCacheFlags.none(),
+            chunk_guilds_at_startup=False,
+            max_messages=None,  # Disable message cache
         )
         self.config = config
         self.tunnels = TunnelManager()
@@ -311,7 +318,7 @@ class TunBot(commands.Bot):
         await self.tunnels.cleanup_all()
         await super().close()
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(seconds=60)  # Check every 60s instead of 30s
     async def cleanup_task(self):
         expired = await self.tunnels.cleanup_expired()
         for service in expired:
@@ -500,43 +507,8 @@ async def tunnel_status(ctx: commands.Context):
 @tunnel.command(name="ping")
 @is_allowed()
 async def tunnel_ping(ctx: commands.Context):
-    """Show bot diagnostics and latencies."""
-    import platform
-    import socket
-
-    embed = discord.Embed(title="Diagnostics", color=Colors.INFO)
-
-    # Discord gateway latency
-    gateway_ms = round(bot.latency * 1000, 2)
-    embed.add_field(name="Discord Gateway", value=f"`{gateway_ms}ms`", inline=True)
-
-    # Cloudflared check
-    try:
-        start = time.time()
-        result = subprocess.run(
-            ["cloudflared", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        cf_latency = round((time.time() - start) * 1000, 2)
-        cf_version = result.stdout.strip().split()[2] if result.stdout else "unknown"
-        embed.add_field(name="Cloudflared", value=f"`{cf_version}` ({cf_latency}ms)", inline=True)
-    except Exception:
-        embed.add_field(name="Cloudflared", value="`unavailable`", inline=True)
-
-    # System info
-    embed.add_field(name="Host", value=f"`{socket.gethostname()}`", inline=True)
-    embed.add_field(name="Python", value=f"`{platform.python_version()}`", inline=True)
-    embed.add_field(name="Platform", value=f"`{platform.system()} {platform.release()}`", inline=True)
-
-    # Active tunnels
-    active = len(bot.tunnels.active_tunnels)
-    max_tunnels = bot.config.max_concurrent
-    embed.add_field(name="Active Tunnels", value=f"`{active}/{max_tunnels}`", inline=True)
-
-    await ctx.send(embed=embed)
-    logger.info(f"User {ctx.author} ran ping diagnostics")
+    """Check if bot is responsive."""
+    await ctx.send("Pong!")
 
 
 @tunnel.error
