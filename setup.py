@@ -323,11 +323,11 @@ def setup_env(token: str):
 def setup_systemd():
     """Generate systemd service file for persistent operation."""
     if not shutil.which("systemctl"):
-        return
+        return False
 
     print()
     if not prompt_yes_no("Generate systemd service file for auto-start?", default=False):
-        return
+        return False
 
     bot_dir = Path.cwd().resolve()
     venv_python = bot_dir / "venv" / "bin" / "python"
@@ -363,6 +363,7 @@ WantedBy=multi-user.target
     print_info("To check status:")
     print_info(f"  {Colors.BOLD}sudo systemctl status tunbot{Colors.RESET}")
     print_info(f"  {Colors.BOLD}journalctl -u tunbot -f{Colors.RESET}")
+    return True
 
 
 def main():
@@ -442,15 +443,16 @@ def main():
         print(f"\n    {Colors.BOLD}{invite_url}{Colors.RESET}\n")
         print_info("After inviting, you can DM the bot directly.")
 
-    setup_systemd()
+    using_systemd = setup_systemd()
 
-    print()
-    if venv_exists and not in_venv:
-        print_info("Run the bot:")
-        print(f"\n    {Colors.BOLD}source venv/bin/activate && python tunbot.py{Colors.RESET}\n")
-    else:
-        print_info("Run the bot:")
-        print(f"\n    {Colors.BOLD}python tunbot.py{Colors.RESET}\n")
+    if not using_systemd:
+        print()
+        if venv_exists and not in_venv:
+            print_info("Run the bot:")
+            print(f"\n    {Colors.BOLD}source venv/bin/activate && python tunbot.py{Colors.RESET}\n")
+        else:
+            print_info("Run the bot:")
+            print(f"\n    {Colors.BOLD}python tunbot.py{Colors.RESET}\n")
 
 
 if __name__ == "__main__":
