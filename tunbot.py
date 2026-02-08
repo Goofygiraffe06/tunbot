@@ -531,7 +531,7 @@ async def tunnel_ping(ctx: commands.Context):
     embed.add_field(name="Platform", value=f"`{platform.system()} {platform.release()}`", inline=True)
 
     # Active tunnels
-    active = len(bot.tunnels.get_active())
+    active = len(bot.tunnels.active_tunnels)
     max_tunnels = bot.config.defaults.max_concurrent
     embed.add_field(name="Active Tunnels", value=f"`{active}/{max_tunnels}`", inline=True)
 
