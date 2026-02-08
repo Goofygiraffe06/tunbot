@@ -144,10 +144,13 @@ def check_dependencies():
         subprocess.run([str(pip_path), "install", "-q", "-r", "requirements.txt"], check=True)
         print_ok("Dependencies installed")
 
+        # Re-exec with venv Python so imports work
         if venv_path.exists() and not in_venv:
-            print()
-            print_info("Activate venv before running:")
-            print_info(f"  {Colors.BOLD}source venv/bin/activate{Colors.RESET}")
+            venv_python = venv_path / "bin" / "python"
+            if not venv_python.exists():
+                venv_python = venv_path / "Scripts" / "python.exe"
+            print_info("Restarting with venv...")
+            os.execv(str(venv_python), [str(venv_python), __file__] + sys.argv[1:])
 
 
 def validate_discord_id(value: str) -> bool:
@@ -418,8 +421,6 @@ def main():
         print_step(5, 5, "Writing Configuration")
         write_config(token, allowed_users, duration, max_concurrent, services)
         setup_env(token)
-
-    setup_systemd()
 
     print_header("Setup Complete")
 
