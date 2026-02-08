@@ -344,7 +344,8 @@ async def tunnel(ctx: commands.Context):
         description="`!tunnel list` - Show available services\n"
                     "`!tunnel start <service> [duration]` - Start a tunnel\n"
                     "`!tunnel stop <service>` - Stop a tunnel\n"
-                    "`!tunnel status` - Show active tunnels",
+                    "`!tunnel status` - Show active tunnels\n"
+                    "`!tunnel ping` - Show diagnostics",
         color=Colors.INFO,
     )
     await ctx.send(embed=embed)
@@ -496,11 +497,54 @@ async def tunnel_status(ctx: commands.Context):
     logger.info(f"User {ctx.author} checked tunnel status")
 
 
+@tunnel.command(name="ping")
+@is_allowed()
+async def tunnel_ping(ctx: commands.Context):
+    """Show bot diagnostics and latencies."""
+    import platform
+    import socket
+
+    embed = discord.Embed(title="Diagnostics", color=Colors.INFO)
+
+    # Discord gateway latency
+    gateway_ms = round(bot.latency * 1000, 2)
+    embed.add_field(name="Discord Gateway", value=f"`{gateway_ms}ms`", inline=True)
+
+    # Cloudflared check
+    try:
+        start = time.time()
+        result = subprocess.run(
+            ["cloudflared", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        cf_latency = round((time.time() - start) * 1000, 2)
+        cf_version = result.stdout.strip().split()[2] if result.stdout else "unknown"
+        embed.add_field(name="Cloudflared", value=f"`{cf_version}` ({cf_latency}ms)", inline=True)
+    except Exception:
+        embed.add_field(name="Cloudflared", value="`unavailable`", inline=True)
+
+    # System info
+    embed.add_field(name="Host", value=f"`{socket.gethostname()}`", inline=True)
+    embed.add_field(name="Python", value=f"`{platform.python_version()}`", inline=True)
+    embed.add_field(name="Platform", value=f"`{platform.system()} {platform.release()}`", inline=True)
+
+    # Active tunnels
+    active = len(bot.tunnels.get_active())
+    max_tunnels = bot.config.defaults.max_concurrent
+    embed.add_field(name="Active Tunnels", value=f"`{active}/{max_tunnels}`", inline=True)
+
+    await ctx.send(embed=embed)
+    logger.info(f"User {ctx.author} ran ping diagnostics")
+
+
 @tunnel.error
 @tunnel_list.error
 @tunnel_start.error
 @tunnel_stop.error
 @tunnel_status.error
+@tunnel_ping.error
 async def tunnel_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, commands.CheckFailure):
         return
